@@ -3,20 +3,21 @@ import sys
 import os
 import argparse
 
-def is_abreviation(word):
-    abreviation_list = open("skammstafanir.txt", "r")
-    for items in abreviation_list:
-        if (word in items):
-            return True
-    if(type(re.match(".+\.(.+\.)+", word)) != type(None)):
-        return True
-    return False
+"""
+Creates a dictionary of abreviations
+"""
+def make_abrev_dict():
+    abreviations = open("skammstafanir.txt", "r")
+    abrev_dict = dict()
+    for abrev in abreviations:
+        abrev_dict.update({f'{abrev}':f'{abrev}'})
+    return abrev_dict
 
-def better_clean(tokens):
+def better_clean(tokens, abrev_dict):
     tokens = re.sub(",$", "\n,", tokens)
     tokens = re.sub(":$", "\n:", tokens)
     #ATH hvort token er lén, stytting eða email
-    if(re.match(".+(://)...+", tokens) or is_abreviation(tokens) or re.match(".+\@.+\..+", tokens) or re.match("[0-9]+[\.,][0-9]*", tokens)): #Gerum ráð fyrir að lén sé aldrei styttra en 
+    if(re.match(".+(://)...+", tokens) or (tokens in abrev_dict) or re.match(".+\@.+\..+", tokens) or re.match("[0-9]+[\.,][0-9]*", tokens)): #Gerum ráð fyrir að lén sé aldrei styttra en 
         return tokens
     else:
         tokens = re.sub("-$", "\n-", tokens)
@@ -43,22 +44,23 @@ def initial_cleaning(line):
 def master_clean_text(text, output_name):
      out = open(output_name, "w+", encoding="utf-8")
      token = ""
+     abreviation_dict = make_abrev_dict()
      for items in text:
         for item in initial_cleaning(items).split(" "):
             item = re.sub(r"\s", "", item)
             match = re.search("[\.,_:“„;'\+\*\-\[\]\{\}()//~\?!&%#^<>|’=`ˈ]", item) #Vitum núna að við þurfum að skoða nánar
-            if(not match):
+            if not match:
                 token = item
             else:
-                token = better_clean(item)
-            if(token is not "" or re.match("\s",token)):
+                token = better_clean(item, abreviation_dict)
+            if token is not "" or re.match("\s",token):
                 out.write(f'{token}\n')
         out.write(f'\n') #Auka línubil eftir hverja málsgrein
 
 def run(args):
     text_file = open(args.input, encoding="utf-8")
     out_file_name = "tokenized.txt"
-    if(type(args.output) != type(None)):
+    if args.output is not None:
         out_file_name = args.output
     master_clean_text(text_file.readlines(), out_file_name)
 
@@ -72,14 +74,3 @@ def main():
 
 if __name__=="__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
